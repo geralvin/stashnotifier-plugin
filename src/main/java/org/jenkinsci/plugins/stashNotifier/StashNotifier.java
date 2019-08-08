@@ -107,6 +107,12 @@ public class StashNotifier extends Notifier implements SimpleBuildStep {
     private final String buildName;
 
     /**
+     * buildState
+     */
+
+    private final String buildState;
+
+    /**
      * base url of Bitbucket server, e. g. <tt>http://localhost:7990</tt>.
      */
     private final String stashServerBaseUrl;
@@ -162,6 +168,7 @@ public class StashNotifier extends Notifier implements SimpleBuildStep {
 
     StashNotifier(
             String buildName,
+            String buildState,
             String stashServerBaseUrl,
             String credentialsId,
             boolean ignoreUnverifiedSSLPeer,
@@ -175,6 +182,7 @@ public class StashNotifier extends Notifier implements SimpleBuildStep {
     ) {
 
         this.buildName = buildName;
+        this.buildState = buildState;
         this.stashServerBaseUrl = stashServerBaseUrl != null && stashServerBaseUrl.endsWith("/")
                 ? stashServerBaseUrl.substring(0, stashServerBaseUrl.length() - 1)
                 : stashServerBaseUrl;
@@ -192,6 +200,7 @@ public class StashNotifier extends Notifier implements SimpleBuildStep {
     @DataBoundConstructor
     public StashNotifier(
             String buildName,
+            String buildState,
             String stashServerBaseUrl,
             String credentialsId,
             boolean ignoreUnverifiedSSLPeer,
@@ -204,6 +213,7 @@ public class StashNotifier extends Notifier implements SimpleBuildStep {
     ) {
         this(
                 buildName,
+                buildState,
                 stashServerBaseUrl,
                 credentialsId,
                 ignoreUnverifiedSSLPeer,
@@ -220,6 +230,8 @@ public class StashNotifier extends Notifier implements SimpleBuildStep {
     public String getBuildName() {
         return buildName;
     }
+
+    public String getBuildState() { return buildState; }
 
     public boolean isDisableInprogressNotification() {
         return disableInprogressNotification;
@@ -286,24 +298,15 @@ public class StashNotifier extends Notifier implements SimpleBuildStep {
                             boolean disableInProgress) {
         StashBuildState state;
 
-        PrintStream logger = listener.getLogger();
+//        PrintStream logger = listener.getLogger();
 
         Result buildResult = run.getResult();
         if (buildResult == null && disableInProgress) {
             return true;
-        } else if (buildResult == null) {
+        } else if (buildState == StashBuildState.INPROGRESS.name()) {
             state = StashBuildState.INPROGRESS;
-        } else if (buildResult == Result.SUCCESS) {
+        } else if (buildState == StashBuildState.SUCCESSFUL.name()) {
             state = StashBuildState.SUCCESSFUL;
-        } else if (buildResult == Result.UNSTABLE && considerUnstableAsSuccess) {
-            logger.println("UNSTABLE reported to Bitbucket as SUCCESSFUL");
-            state = StashBuildState.SUCCESSFUL;
-        } else if (buildResult == Result.ABORTED && disableInProgress) {
-            logger.println("ABORTED");
-            return true;
-        } else if (buildResult.equals(Result.NOT_BUILT)) {
-            logger.println("NOT BUILT");
-            return true;
         } else {
             state = StashBuildState.FAILED;
         }
